@@ -28,6 +28,11 @@ body { font-family: -apple-system, 'Pretendard', BlinkMacSystemFont, 'Segoe UI',
 .header { background:var(--card); padding:14px 24px; display:flex; align-items:center; gap:12px; box-shadow:var(--shadow-sm); position:sticky; top:0; z-index:200; }
 .header-logo { font-size:17px; font-weight:800; color:var(--primary); letter-spacing:-0.5px; }
 .header-sub { font-size:12px; color:var(--text-secondary); margin-left:auto; }
+.header-actions { display:flex; gap:8px; align-items:center; margin-left:16px; }
+.header-btn { padding:6px 12px; border-radius:8px; border:1.5px solid var(--border); background:var(--card); color:var(--text-primary); font-size:12px; font-weight:600; cursor:pointer; transition:all .15s; font-family:inherit; white-space:nowrap; }
+.header-btn:hover { background:var(--bg); border-color:var(--primary); color:var(--primary); }
+.header-btn.import { background:var(--primary); color:#fff; border-color:var(--primary); }
+.header-btn.import:hover { background:#1a6ee0; }
 
 .tab-nav { background:var(--card); display:flex; border-bottom:1px solid var(--border); padding:0 24px; position:sticky; top:53px; z-index:199; overflow-x:auto; }
 .tab-btn { padding:14px 18px; border:none; background:none; color:var(--text-secondary); font-size:14px; font-weight:500; cursor:pointer; border-bottom:2px solid transparent; transition:all .2s; white-space:nowrap; font-family:inherit; }
@@ -261,6 +266,11 @@ table.ptbl { width:100%; border-collapse:collapse; font-size:13px; min-width:800
 <div class="header">
   <span class="header-logo">자사몰 프로모션</span>
   <span class="header-sub" id="todayLabel"></span>
+  <div class="header-actions">
+    <button class="header-btn" onclick="exportData()">⬇ 데이터 내보내기</button>
+    <button class="header-btn import" onclick="document.getElementById('importFile').click()">⬆ 데이터 가져오기</button>
+    <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(this)">
+  </div>
 </div>
 
 <div class="tab-nav">
@@ -513,6 +523,45 @@ function loadDB() {
 }
 function saveDB() { localStorage.setItem(STORAGE_KEY, JSON.stringify(DB)); }
 function nextId(arr) { return arr.length ? Math.max(...arr.map(x=>x.id))+1 : 1; }
+
+// ============ EXPORT / IMPORT ============
+function exportData() {
+  const json = JSON.stringify(DB, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const date = new Date().toISOString().slice(0,10);
+  a.href = url;
+  a.download = `프로모션_데이터_${date}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importData(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      const parsed = JSON.parse(e.target.result);
+      if (!parsed.promotions || !parsed.products) {
+        alert('올바른 데이터 파일이 아닙니다.');
+        return;
+      }
+      if (!confirm('현재 데이터를 덮어쓰고 가져온 데이터로 교체할까요?')) return;
+      DB = parsed;
+      saveDB();
+      renderDashboard();
+      renderProducts();
+      renderPlan();
+      alert('데이터를 성공적으로 가져왔습니다!');
+    } catch(e) {
+      alert('파일을 읽는 중 오류가 발생했습니다.');
+    }
+    input.value = '';
+  };
+  reader.readAsText(file);
+}
 
 // ============ TABS ============
 function switchTab(name) {
