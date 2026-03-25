@@ -1,0 +1,1409 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>자사몰 프로모션 대시보드</title>
+<style>
+:root {
+  --primary: #3182F6;
+  --primary-light: #E8F1FE;
+  --bg: #F2F4F6;
+  --card: #FFFFFF;
+  --text-primary: #191F28;
+  --text-secondary: #8B95A1;
+  --text-tertiary: #B0B8C1;
+  --border: #E5E8EB;
+  --success: #0BB96A;
+  --danger: #F04452;
+  --warning: #F5A623;
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 2px 4px rgba(0,0,0,0.06);
+  --shadow: 0 4px 16px rgba(0,0,0,0.08);
+  --radius: 16px;
+  --radius-sm: 10px;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family: -apple-system, 'Pretendard', BlinkMacSystemFont, 'Segoe UI', sans-serif; background:var(--bg); color:var(--text-primary); min-height:100vh; font-size:14px; }
+
+.header { background:var(--card); padding:14px 24px; display:flex; align-items:center; gap:12px; box-shadow:var(--shadow-sm); position:sticky; top:0; z-index:200; }
+.header-logo { font-size:17px; font-weight:800; color:var(--primary); letter-spacing:-0.5px; }
+.header-sub { font-size:12px; color:var(--text-secondary); margin-left:auto; }
+
+.tab-nav { background:var(--card); display:flex; border-bottom:1px solid var(--border); padding:0 24px; position:sticky; top:53px; z-index:199; overflow-x:auto; }
+.tab-btn { padding:14px 18px; border:none; background:none; color:var(--text-secondary); font-size:14px; font-weight:500; cursor:pointer; border-bottom:2px solid transparent; transition:all .2s; white-space:nowrap; font-family:inherit; }
+.tab-btn.active { color:var(--primary); border-bottom-color:var(--primary); font-weight:700; }
+.tab-btn:hover:not(.active) { color:var(--text-primary); }
+
+.main { padding:20px 24px; max-width:1280px; margin:0 auto; }
+.tab-content { display:none; } .tab-content.active { display:block; }
+
+/* Cards */
+.card { background:var(--card); border-radius:var(--radius); padding:20px; box-shadow:var(--shadow-sm); margin-bottom:16px; }
+.card-title { font-size:15px; font-weight:700; margin-bottom:16px; display:flex; align-items:center; justify-content:space-between; gap:8px; }
+.card-title-text { display:flex; align-items:center; gap:8px; }
+
+/* Calendar */
+.cal-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; }
+.cal-month { font-size:18px; font-weight:800; }
+.cal-nav { display:flex; gap:6px; }
+.cal-nav-btn { width:34px; height:34px; border-radius:50%; border:1px solid var(--border); background:var(--card); cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:15px; transition:background .15s; }
+.cal-nav-btn:hover { background:var(--bg); }
+.cal-grid { display:grid; grid-template-columns:repeat(7,1fr); border-radius:12px; overflow:hidden; border:1px solid var(--border); }
+.cal-day-hdr { background:var(--bg); text-align:center; padding:9px 4px; font-size:12px; font-weight:600; color:var(--text-secondary); border-bottom:1px solid var(--border); }
+.cal-day-hdr:first-child { color:var(--danger); }
+.cal-day-hdr:last-child { color:var(--primary); }
+.cal-cell { background:var(--card); min-height:88px; padding:6px; border-right:1px solid var(--border); border-bottom:1px solid var(--border); position:relative; }
+.cal-cell:nth-child(7n) { border-right:none; }
+.cal-cell.other-month .day-num { color:var(--text-tertiary); }
+.cal-cell.today { background:#FAFCFF; }
+.day-num { font-size:12px; font-weight:500; width:22px; height:22px; display:flex; align-items:center; justify-content:center; border-radius:50%; margin-bottom:3px; }
+.cal-cell.today .day-num { background:var(--primary); color:#fff; font-weight:700; }
+.cal-cell.sun .day-num { color:var(--danger); }
+.cal-cell.sat .day-num { color:var(--primary); }
+.cal-cell.today.sun .day-num, .cal-cell.today.sat .day-num { color:#fff; }
+.promo-bar { font-size:10px; padding:2px 5px; border-radius:3px; margin-bottom:2px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; color:#fff; font-weight:600; cursor:pointer; line-height:1.4; }
+.promo-bar:hover { opacity:.85; }
+.promo-bar.continues-left { border-radius:0 3px 3px 0; }
+.promo-bar.continues-right { border-radius:3px 0 0 3px; }
+.promo-bar.continues-both { border-radius:0; }
+.promo-bar-dot { display:inline-block; width:6px; height:6px; border-radius:50%; margin-right:3px; vertical-align:middle; flex-shrink:0; }
+.more-bar { font-size:10px; color:var(--text-secondary); padding-left:2px; }
+
+/* Promo Cards Grid */
+.promo-grid { display:grid; grid-template-columns:repeat(2, 1fr); gap:16px; }
+.promo-card { background:var(--card); border-radius:var(--radius); overflow:hidden; box-shadow:var(--shadow-sm); }
+.promo-card-hdr { padding:16px 20px; color:#fff; }
+.promo-card-name { font-size:16px; font-weight:800; margin-bottom:3px; }
+.promo-card-period { font-size:12px; opacity:.88; }
+.promo-tags { display:flex; gap:4px; flex-wrap:wrap; margin-top:8px; }
+.promo-tag { background:rgba(255,255,255,.25); padding:2px 8px; border-radius:20px; font-size:11px; font-weight:600; }
+.promo-card-body { padding:16px 20px; }
+
+.section-label { font-size:12px; font-weight:700; color:var(--text-secondary); text-transform:uppercase; letter-spacing:.5px; margin-bottom:8px; display:flex; align-items:center; gap:4px; }
+
+.benefit-table { width:100%; border-collapse:collapse; font-size:12px; margin-bottom:12px; }
+.benefit-table th { background:var(--bg); padding:7px 6px; font-weight:600; color:var(--text-secondary); text-align:center; font-size:11px; }
+.benefit-table th:first-child { text-align:left; border-radius:6px 0 0 6px; }
+.benefit-table th:last-child { border-radius:0 6px 6px 0; }
+.benefit-table td { padding:8px 6px; border-bottom:1px solid var(--border); text-align:center; vertical-align:middle; }
+.benefit-table td:first-child { text-align:left; font-weight:600; }
+.benefit-table tr:last-child td { border-bottom:none; }
+.discount-badge { background:#FFF0F1; color:var(--danger); padding:2px 6px; border-radius:4px; font-weight:700; font-size:11px; }
+.profit-badge { background:#F0FBF4; color:var(--success); padding:2px 6px; border-radius:4px; font-weight:600; font-size:11px; }
+.warn-badge { background:#FFF8EC; color:var(--warning); padding:2px 6px; border-radius:4px; font-weight:600; font-size:11px; }
+.free-ship { background:#F0FBF4; color:var(--success); padding:2px 7px; border-radius:4px; font-size:11px; font-weight:600; }
+.paid-ship { background:var(--bg); color:var(--text-secondary); padding:2px 7px; border-radius:4px; font-size:11px; }
+
+.member-benefit-box { background:var(--primary-light); color:var(--primary); border-radius:8px; padding:8px 10px; font-size:12px; margin-bottom:10px; display:flex; gap:6px; align-items:flex-start; }
+.gift-row { background:#FFFBF0; border-radius:8px; padding:8px 10px; font-size:12px; margin-bottom:6px; display:flex; align-items:center; gap:6px; }
+.gift-type-badge { padding:2px 7px; border-radius:10px; font-size:10px; font-weight:700; }
+.gift-type-all { background:#FFF3E0; color:#E65100; }
+.gift-type-member { background:var(--primary-light); color:var(--primary); }
+
+/* Checklist */
+.checklist-section { border-top:1px solid var(--border); padding-top:12px; margin-top:12px; }
+.progress-wrap { display:flex; align-items:center; gap:8px; margin-bottom:10px; }
+.progress-bar-bg { flex:1; background:var(--border); border-radius:10px; height:6px; overflow:hidden; }
+.progress-bar-fill { background:var(--primary); height:100%; border-radius:10px; transition:width .3s; }
+.progress-pct { font-size:12px; font-weight:700; color:var(--primary); min-width:32px; text-align:right; }
+.checklist-item { display:flex; align-items:center; gap:7px; padding:5px 0; border-bottom:1px solid var(--border); }
+.checklist-item:last-child { border-bottom:none; }
+.checklist-item input[type=checkbox] { width:15px; height:15px; accent-color:var(--primary); cursor:pointer; flex-shrink:0; }
+.checklist-label { flex:1; font-size:13px; cursor:pointer; transition:color .15s; }
+.checklist-label.done { text-decoration:line-through; color:var(--text-tertiary); }
+.del-btn { width:20px; height:20px; border:none; background:none; color:var(--text-tertiary); cursor:pointer; border-radius:4px; font-size:14px; display:flex; align-items:center; justify-content:center; opacity:0; transition:opacity .15s; flex-shrink:0; }
+.checklist-item:hover .del-btn { opacity:1; }
+.del-btn:hover { background:var(--bg); color:var(--danger); }
+.checklist-add-row { display:flex; gap:6px; margin-top:8px; }
+.checklist-add-row input { flex:1; padding:6px 10px; border:1px solid var(--border); border-radius:8px; font-size:12px; outline:none; font-family:inherit; }
+.checklist-add-row input:focus { border-color:var(--primary); }
+.btn-add-check { padding:6px 10px; background:var(--primary); color:#fff; border:none; border-radius:8px; font-size:12px; cursor:pointer; font-weight:600; }
+
+/* Buttons */
+.btn { padding:10px 18px; border-radius:var(--radius-sm); border:none; cursor:pointer; font-size:14px; font-weight:600; transition:all .15s; font-family:inherit; }
+.btn-primary { background:var(--primary); color:#fff; }
+.btn-primary:hover { background:#1a6ee0; }
+.btn-secondary { background:var(--bg); color:var(--text-primary); }
+.btn-secondary:hover { background:var(--border); }
+.btn-danger { background:#FFF0F1; color:var(--danger); }
+.btn-danger:hover { background:#ffe0e2; }
+.btn-success { background:#F0FBF4; color:var(--success); }
+.btn-sm { padding:6px 12px; font-size:12px; border-radius:8px; }
+.btn-xs { padding:4px 8px; font-size:11px; border-radius:6px; }
+
+/* Form */
+.form-group { margin-bottom:16px; }
+.form-label { display:block; font-size:12px; font-weight:700; color:var(--text-secondary); margin-bottom:6px; }
+.form-input { width:100%; padding:10px 14px; border:1.5px solid var(--border); border-radius:var(--radius-sm); font-size:14px; outline:none; transition:border .15s; background:var(--card); color:var(--text-primary); font-family:inherit; }
+.form-input:focus { border-color:var(--primary); }
+textarea.form-input { resize:vertical; min-height:72px; }
+.form-row { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+.form-row-3 { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; }
+
+/* Tags */
+.tag-selector { display:flex; gap:6px; flex-wrap:wrap; }
+.tag-opt { padding:5px 12px; border-radius:20px; border:1.5px solid var(--border); background:var(--bg); color:var(--text-secondary); font-size:12px; cursor:pointer; transition:all .15s; font-weight:600; }
+.tag-opt.sel { background:var(--primary-light); border-color:var(--primary); color:var(--primary); }
+
+/* Color Picker */
+.color-opts { display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+.color-opt { width:28px; height:28px; border-radius:50%; cursor:pointer; border:3px solid transparent; transition:border .15s; flex-shrink:0; }
+.color-opt.sel { border-color:var(--text-primary); }
+
+/* Product list in form */
+.product-pick-list { border:1.5px solid var(--border); border-radius:var(--radius-sm); overflow:hidden; }
+.product-pick-item { display:flex; align-items:center; gap:10px; padding:10px 12px; border-bottom:1px solid var(--border); }
+.product-pick-item:last-child { border-bottom:none; }
+.product-pick-item:hover { background:var(--bg); }
+.product-pick-info { flex:1; }
+.product-pick-name { font-size:13px; font-weight:600; }
+.product-pick-price { font-size:11px; color:var(--text-secondary); }
+.product-pick-inputs { display:flex; align-items:center; gap:8px; }
+.price-input { width:100px; padding:5px 8px; border:1.5px solid var(--border); border-radius:7px; font-size:12px; outline:none; text-align:right; font-family:inherit; }
+.price-input:focus { border-color:var(--primary); }
+.auto-calc { font-size:11px; color:var(--text-secondary); white-space:nowrap; }
+
+/* Product Table (Tab3) */
+.tbl-wrap { overflow-x:auto; }
+table.ptbl { width:100%; border-collapse:collapse; font-size:13px; min-width:800px; }
+.ptbl th { background:var(--bg); padding:10px 12px; font-weight:700; color:var(--text-secondary); font-size:12px; white-space:nowrap; border-bottom:2px solid var(--border); }
+.ptbl th:first-child { border-radius:8px 0 0 0; }
+.ptbl th:last-child { border-radius:0 8px 0 0; }
+.ptbl td { padding:10px 12px; border-bottom:1px solid var(--border); vertical-align:middle; text-align:center; }
+.ptbl td:first-child { text-align:left; }
+.ptbl tr:last-child td { border-bottom:none; }
+.ptbl tr:hover td { background:#FAFAFA; }
+.thumb-box { width:38px; height:38px; border-radius:8px; background:var(--bg); display:flex; align-items:center; justify-content:center; font-size:18px; margin:0 auto; overflow:hidden; cursor:pointer; border:1.5px dashed var(--border); flex-shrink:0; }
+.thumb-box img { width:100%; height:100%; object-fit:cover; border-radius:6px; }
+.margin-hi { color:var(--success); font-weight:700; }
+.margin-mid { color:var(--warning); font-weight:700; }
+.margin-lo { color:var(--danger); font-weight:700; }
+.edit-cell-input { width:90px; padding:4px 7px; border:1.5px solid var(--primary); border-radius:6px; font-size:12px; text-align:right; font-family:inherit; outline:none; }
+
+/* Planning Tab */
+.insights-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(320px,1fr)); gap:12px; margin-bottom:20px; }
+.insight-card { background:var(--bg); border-radius:var(--radius-sm); padding:14px; }
+.insight-card-name { font-size:13px; font-weight:700; margin-bottom:8px; display:flex; align-items:center; gap:6px; }
+.insight-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+.insight-textarea { width:100%; border:1.5px solid var(--border); border-radius:8px; padding:8px; font-size:12px; resize:vertical; min-height:70px; font-family:inherit; outline:none; background:var(--card); }
+.insight-textarea:focus { border-color:var(--primary); }
+.insight-save-btn { margin-top:6px; padding:5px 12px; background:var(--primary); color:#fff; border:none; border-radius:7px; font-size:11px; cursor:pointer; font-weight:600; }
+
+.rules-box { background:var(--primary-light); border-radius:var(--radius-sm); padding:14px 16px; margin-bottom:20px; }
+.rules-title { font-size:13px; font-weight:700; color:var(--primary); margin-bottom:8px; }
+.rule-item { font-size:12px; color:var(--text-primary); padding:3px 0; display:flex; gap:8px; }
+.rule-item::before { content:'•'; color:var(--primary); flex-shrink:0; }
+
+.suggestions-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(320px,1fr)); gap:12px; }
+.suggestion-card { border:1.5px solid var(--border); border-radius:var(--radius-sm); padding:16px; background:var(--card); }
+.suggestion-card:hover { border-color:var(--primary); box-shadow:var(--shadow-sm); }
+.suggestion-header { display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; }
+.suggestion-name { font-size:14px; font-weight:700; }
+.suggestion-period { font-size:11px; color:var(--text-secondary); }
+.suggestion-tags { display:flex; gap:4px; flex-wrap:wrap; margin-bottom:8px; }
+.suggestion-tag { background:var(--bg); color:var(--text-secondary); padding:2px 8px; border-radius:10px; font-size:11px; font-weight:600; }
+.suggestion-desc { font-size:12px; color:var(--text-secondary); line-height:1.6; margin-bottom:10px; }
+.suggestion-products { font-size:12px; color:var(--text-primary); background:var(--bg); border-radius:7px; padding:8px; margin-bottom:8px; }
+.suggestion-actions { display:flex; gap:6px; }
+
+/* Timeline */
+.timeline-wrap { overflow-x:auto; margin-bottom:20px; }
+.timeline { min-width:600px; }
+.timeline-header { display:flex; border-bottom:1px solid var(--border); margin-bottom:8px; }
+.timeline-month-label { font-size:12px; font-weight:600; color:var(--text-secondary); text-align:center; padding:4px 0; }
+.timeline-row { display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+.timeline-name { font-size:12px; font-weight:600; white-space:nowrap; width:120px; overflow:hidden; text-overflow:ellipsis; flex-shrink:0; }
+.timeline-bar-wrap { flex:1; position:relative; height:22px; }
+.timeline-bar { position:absolute; height:100%; border-radius:4px; display:flex; align-items:center; padding:0 6px; font-size:10px; color:#fff; font-weight:600; white-space:nowrap; overflow:hidden; }
+
+/* Modal */
+.modal-overlay { display:none; position:fixed; inset:0; background:rgba(0,0,0,.45); z-index:1000; align-items:center; justify-content:center; padding:16px; }
+.modal-overlay.open { display:flex; }
+.modal { background:var(--card); border-radius:var(--radius); padding:24px; width:100%; max-width:640px; max-height:90vh; overflow-y:auto; }
+.modal-hdr { display:flex; align-items:center; justify-content:space-between; margin-bottom:20px; }
+.modal-title { font-size:17px; font-weight:800; }
+.modal-close { width:32px; height:32px; border:none; background:var(--bg); border-radius:50%; cursor:pointer; font-size:16px; display:flex; align-items:center; justify-content:center; }
+
+/* Misc */
+.divider { height:1px; background:var(--border); margin:16px 0; }
+.flex-between { display:flex; justify-content:space-between; align-items:center; }
+.flex-center { display:flex; align-items:center; }
+.gap-6 { gap:6px; } .gap-8 { gap:8px; } .gap-12 { gap:12px; }
+.mb-4 { margin-bottom:4px; } .mb-8 { margin-bottom:8px; } .mb-12 { margin-bottom:12px; } .mb-16 { margin-bottom:16px; }
+.text-sm { font-size:12px; } .text-xs { font-size:11px; }
+.text-secondary { color:var(--text-secondary); }
+.text-right { text-align:right; }
+.bold { font-weight:700; }
+.empty-state { text-align:center; padding:40px; color:var(--text-tertiary); }
+.empty-icon { font-size:36px; margin-bottom:10px; }
+.chip { display:inline-flex; align-items:center; gap:4px; padding:3px 9px; border-radius:10px; font-size:11px; font-weight:600; }
+.chip-blue { background:var(--primary-light); color:var(--primary); }
+.chip-green { background:#F0FBF4; color:var(--success); }
+.chip-red { background:#FFF0F1; color:var(--danger); }
+.chip-yellow { background:#FFF8EC; color:var(--warning); }
+.chip-gray { background:var(--bg); color:var(--text-secondary); }
+
+.gift-pick-list { border:1.5px solid var(--border); border-radius:var(--radius-sm); overflow:hidden; }
+.gift-pick-item { display:flex; align-items:center; gap:10px; padding:9px 12px; border-bottom:1px solid var(--border); }
+.gift-pick-item:last-child { border-bottom:none; }
+.gift-pick-item:hover { background:var(--bg); }
+
+@media (max-width:768px) {
+  .main { padding:12px 12px; }
+  .promo-grid { grid-template-columns:1fr; } /* 모바일에서 1열 */
+  .form-row, .form-row-3 { grid-template-columns:1fr; }
+  .suggestions-grid, .insights-grid { grid-template-columns:1fr; }
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <span class="header-logo">자사몰 프로모션</span>
+  <span class="header-sub" id="todayLabel"></span>
+</div>
+
+<div class="tab-nav">
+  <button class="tab-btn active" onclick="switchTab('dashboard')">📊 대시보드</button>
+  <button class="tab-btn" onclick="switchTab('add')">＋ 프로모션 추가/편집</button>
+  <button class="tab-btn" onclick="switchTab('products')">🗂 상품 관리</button>
+  <button class="tab-btn" onclick="switchTab('plan')">💡 프로모션 기획</button>
+</div>
+
+<div class="main">
+
+  <!-- ====== TAB 1: DASHBOARD ====== -->
+  <div id="tab-dashboard" class="tab-content active">
+    <div class="card">
+      <div class="cal-header">
+        <button class="cal-nav-btn" onclick="changeMonth(-1)">&#8249;</button>
+        <span class="cal-month" id="calMonthLabel"></span>
+        <button class="cal-nav-btn" onclick="changeMonth(1)">&#8250;</button>
+      </div>
+      <div class="cal-grid" id="calGrid"></div>
+    </div>
+
+    <div class="flex-between mb-12">
+      <div class="bold" style="font-size:15px;">프로모션 카드</div>
+      <span class="text-sm text-secondary" id="promoCountLabel"></span>
+    </div>
+    <div class="promo-grid" id="promoCards"></div>
+  </div>
+
+  <!-- ====== TAB 2: ADD/EDIT ====== -->
+  <div id="tab-add" class="tab-content">
+    <div class="card">
+      <div class="card-title">
+        <span class="card-title-text" id="formTitle">프로모션 추가</span>
+        <div style="display:flex;gap:8px;" id="formActions">
+          <button class="btn btn-secondary btn-sm" onclick="resetForm()">초기화</button>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">프로모션명 *</label>
+          <input class="form-input" id="f_name" placeholder="예: 봄 기획전">
+        </div>
+        <div class="form-group">
+          <label class="form-label">색상</label>
+          <div class="color-opts" id="colorOpts"></div>
+        </div>
+      </div>
+
+      <div class="form-row-3">
+        <div class="form-group">
+          <label class="form-label">시작일 *</label>
+          <input class="form-input" type="date" id="f_startDate" onchange="onStartDateChange(this)">
+        </div>
+        <div class="form-group">
+          <label class="form-label">시작 시간</label>
+          <input class="form-input" type="time" id="f_startTime" value="00:00">
+        </div>
+        <div class="form-group">
+          <label class="form-label">종료일 *</label>
+          <input class="form-input" type="date" id="f_endDate">
+        </div>
+      </div>
+
+      <div class="form-row-3">
+        <div class="form-group">
+          <label class="form-label">종료 시간</label>
+          <input class="form-input" type="time" id="f_endTime" value="23:59">
+        </div>
+        <div class="form-group">
+          <label class="form-label">📲 카카오톡 플친 발송일</label>
+          <input class="form-input" type="date" id="f_kakaoDate">
+        </div>
+        <div class="form-group">
+          <label class="form-label">📧 데이터라이즈 발송일</label>
+          <input class="form-input" type="date" id="f_datariseDate">
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">혜택 유형 해시태그</label>
+        <div class="tag-selector" id="tagSelector"></div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">회원 전용 혜택 (없으면 비워두세요)</label>
+        <input class="form-input" id="f_memberBenefit" placeholder="예: 회원가입 쿠폰팩 지급">
+      </div>
+
+      <div class="divider"></div>
+      <div class="section-label mb-8">행사 상품 선택 및 할인가 설정</div>
+      <div class="product-pick-list" id="productPickList"></div>
+
+      <div class="divider"></div>
+      <div class="section-label mb-8">증정품 설정</div>
+      <div id="giftPickArea"></div>
+      <button class="btn btn-secondary btn-sm" style="margin-top:6px;" onclick="addGiftRow(false)">+ 전고객 증정 추가</button>
+      <button class="btn btn-secondary btn-sm" style="margin-top:6px;margin-left:6px;" onclick="addGiftRow(true)">+ 회원한정 증정 추가</button>
+
+      <div class="divider"></div>
+      <div class="section-label mb-8">준비사항 체크리스트 구성</div>
+      <div class="tag-selector" id="checklistPicker" style="flex-direction:column;gap:6px;"></div>
+
+      <div class="divider"></div>
+      <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:4px;">
+        <button class="btn btn-secondary" onclick="resetForm()">취소</button>
+        <button class="btn btn-primary" onclick="savePromotion()">저장하기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====== TAB 3: PRODUCTS ====== -->
+  <div id="tab-products" class="tab-content">
+    <div class="card mb-16">
+      <div class="card-title">
+        <span class="card-title-text">🧴 본품 목록</span>
+        <button class="btn btn-primary btn-sm" onclick="openProductModal(null,'main')">+ 상품 추가</button>
+      </div>
+      <div class="tbl-wrap">
+        <table class="ptbl" id="mainProductTable"></table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">
+        <span class="card-title-text">🎁 증정품 목록</span>
+        <button class="btn btn-primary btn-sm" onclick="openProductModal(null,'gift')">+ 증정품 추가</button>
+      </div>
+      <div class="tbl-wrap">
+        <table class="ptbl" id="giftProductTable"></table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====== TAB 4: PLANNING ====== -->
+  <div id="tab-plan" class="tab-content">
+    <div class="card mb-16">
+      <div class="card-title"><span class="card-title-text">📌 운영 원칙</span></div>
+      <div class="rules-box">
+        <div class="rules-title">프로모션 기획 규칙</div>
+        <div class="rule-item">짧은 기간에 비슷한 혜택(할인+증정)이 중복되지 않도록 기획</div>
+        <div class="rule-item">기본 판매가는 상시판매가 기준 / 파격 스팟(1일특가 등)을 제외하면 최저판매가 이하로 낮추지 않음</div>
+        <div class="rule-item">회원 전환 목적 혜택(웰컴팩, 쿠폰팩)은 별도 트랙으로 운영 가능</div>
+        <div class="rule-item">증정품 유형 구분 — 전고객(회원+비회원) / 회원한정</div>
+      </div>
+    </div>
+
+    <div class="card mb-16">
+      <div class="card-title"><span class="card-title-text">📅 프로모션 타임라인</span></div>
+      <div class="timeline-wrap"><div class="timeline" id="planTimeline"></div></div>
+    </div>
+
+    <div class="card mb-16">
+      <div class="card-title"><span class="card-title-text">📝 프로모션별 인사이트</span></div>
+      <div class="insights-grid" id="insightsGrid"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">
+        <span class="card-title-text">✨ 다음 프로모션 초안 제안</span>
+        <button class="btn btn-secondary btn-sm" onclick="renderSuggestions()">새로고침</button>
+      </div>
+      <div class="suggestions-grid" id="suggestionsGrid"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Product Modal -->
+<div class="modal-overlay" id="productModal">
+  <div class="modal">
+    <div class="modal-hdr">
+      <span class="modal-title" id="productModalTitle">상품 추가</span>
+      <button class="modal-close" onclick="closeProductModal()">✕</button>
+    </div>
+    <div id="productModalBody"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px;">
+      <button class="btn btn-secondary" onclick="closeProductModal()">취소</button>
+      <button class="btn btn-primary" onclick="saveProduct()">저장</button>
+    </div>
+  </div>
+</div>
+
+<!-- Promo Delete Confirm -->
+<div class="modal-overlay" id="deleteModal">
+  <div class="modal" style="max-width:380px;">
+    <div class="modal-hdr">
+      <span class="modal-title">삭제 확인</span>
+      <button class="modal-close" onclick="closeModal('deleteModal')">✕</button>
+    </div>
+    <p style="font-size:14px;color:var(--text-secondary);margin-bottom:20px;" id="deleteMsg"></p>
+    <div style="display:flex;gap:8px;justify-content:flex-end;">
+      <button class="btn btn-secondary" onclick="closeModal('deleteModal')">취소</button>
+      <button class="btn btn-danger" id="deleteConfirmBtn">삭제</button>
+    </div>
+  </div>
+</div>
+
+<input type="file" id="thumbUpload" accept="image/*" style="display:none;" onchange="handleThumbUpload(event)">
+
+<script>
+// ============ DATA ============
+const STORAGE_KEY = 'promo_dashboard_v4';
+const PRESET_COLORS = ['#3182F6','#0BB96A','#F04452','#FF6B9D','#9B59B6','#F5A623','#1ABC9C','#E67E22','#2C3E50','#8E44AD'];
+const TAGS_OPTIONS = ['#증정','#할인','#1+1','#1일특가','#회원혜택','#신제품','#시즌기획','#패키지','#무료배송','#적립'];
+const DEFAULT_CHECKLIST = ['메인배너','상세배너','구매하기 말풍선','혜택썸네일','디자인 요청','퍼블리싱 요청','시작일 카카오톡 플친메시지','종료일 데이터라이즈메시지','프로모션 소재'];
+
+function defaultData() {
+  return {
+    products: [
+      {id:1,type:'main',name:'더마바이옴 샴푸',category:'샴푸',volume:'350ml',listPrice:34000,regularPrice:27900,minPrice:20900,cost:6131,thumbnail:null},
+      {id:2,type:'main',name:'리제녹실 트리트먼트',category:'트리트먼트',volume:'350ml',listPrice:41000,regularPrice:34800,minPrice:24900,cost:6569,thumbnail:null},
+      {id:3,type:'main',name:'라멜럭스 샴푸',category:'샴푸',volume:'350ml',listPrice:34000,regularPrice:27900,minPrice:20900,cost:5976,thumbnail:null},
+      {id:4,type:'main',name:'레드락신 샴푸',category:'샴푸',volume:'350ml',listPrice:34000,regularPrice:27900,minPrice:20900,cost:5632,thumbnail:null},
+      {id:5,type:'main',name:'샴푸 500ml',category:'샴푸',volume:'500ml',listPrice:48500,regularPrice:31900,minPrice:29900,cost:7887,thumbnail:null},
+      {id:6,type:'main',name:'트리트먼트 200ml',category:'트리트먼트',volume:'200ml',listPrice:31000,regularPrice:22900,minPrice:19900,cost:3321,thumbnail:null},
+      {id:7,type:'main',name:'미니샴푸 50ml',category:'미니',volume:'50ml',listPrice:13000,regularPrice:6900,minPrice:5900,cost:3640,thumbnail:null},
+    ],
+    gifts: [
+      {id:1,name:'더마바이옴 미니샴푸',volume:'25ml',cost:820},
+      {id:2,name:'리제녹실 미니샴푸',volume:'18ml',cost:770},
+      {id:3,name:'미니샴푸 2종&키링파우치',volume:'',cost:3640},
+    ],
+    promotions: [
+      {id:1,name:'봄 기획전',startDate:'2026-03-20',endDate:'2026-04-10',startTime:'00:00',endTime:'23:59',color:'#3182F6',tags:['#증정','#할인'],kakaoDate:'2026-03-20',datariseDate:'2026-04-10',freeshipping:true,memberBenefit:'회원가입 쿠폰팩 (5,000원 쿠폰 + 무료배송 쿠폰)',promoProducts:[{productId:1,salePrice:24900},{productId:3,salePrice:24900}],gifts:[{giftId:1,isMember:false,condition:'1만원 이상 구매'}],memberGifts:[{giftId:2,isMember:true,condition:'2만원 이상 구매 회원'}],checklist:[{id:1,text:'메인배너',done:true},{id:2,text:'상세배너',done:true},{id:3,text:'구매하기 말풍선',done:false},{id:4,text:'혜택썸네일',done:false},{id:5,text:'디자인 요청',done:true},{id:6,text:'퍼블리싱 요청',done:false},{id:7,text:'시작일 카카오톡 플친메시지',done:true},{id:8,text:'종료일 데이터라이즈메시지',done:false},{id:9,text:'프로모션 소재',done:false}],insight:''},
+      {id:2,name:'화이트데이 특가',startDate:'2026-03-10',endDate:'2026-03-16',startTime:'10:00',endTime:'23:59',color:'#FF6B9D',tags:['#할인'],kakaoDate:'2026-03-10',datariseDate:'2026-03-16',freeshipping:true,memberBenefit:'',promoProducts:[{productId:2,salePrice:29900}],gifts:[],memberGifts:[],checklist:[{id:1,text:'메인배너',done:true},{id:2,text:'상세배너',done:true},{id:3,text:'구매하기 말풍선',done:true},{id:4,text:'혜택썸네일',done:true},{id:5,text:'디자인 요청',done:true},{id:6,text:'퍼블리싱 요청',done:true},{id:7,text:'시작일 카카오톡 플친메시지',done:true},{id:8,text:'종료일 데이터라이즈메시지',done:true},{id:9,text:'프로모션 소재',done:true}],insight:''},
+      {id:3,name:'신규회원 웰컴팩',startDate:'2026-03-01',endDate:'2026-03-31',startTime:'00:00',endTime:'23:59',color:'#0BB96A',tags:['#회원혜택'],kakaoDate:'',datariseDate:'',freeshipping:false,memberBenefit:'회원가입 시 5,000원 쿠폰 지급 + 무료배송 쿠폰',promoProducts:[],gifts:[],memberGifts:[{giftId:1,isMember:true,condition:'가입 후 첫 구매'}],checklist:[{id:1,text:'메인배너',done:true},{id:2,text:'상세배너',done:true},{id:3,text:'구매하기 말풍선',done:false},{id:4,text:'혜택썸네일',done:true},{id:5,text:'디자인 요청',done:true},{id:6,text:'퍼블리싱 요청',done:true},{id:7,text:'시작일 카카오톡 플친메시지',done:false},{id:8,text:'종료일 데이터라이즈메시지',done:false},{id:9,text:'프로모션 소재',done:true}],insight:''},
+    ],
+    insights: {}
+  };
+}
+
+let DB = {};
+let calYear, calMonth;
+let editingPromoId = null;
+let editingProductId = null;
+let editingProductType = null;
+let selectedTags = [];
+let selectedColor = PRESET_COLORS[0];
+let selectedChecklistItems = [...DEFAULT_CHECKLIST];
+let currentThumbProductId = null;
+let tempGiftRows = [];
+
+function loadDB() {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) { DB = JSON.parse(saved); }
+    else { DB = defaultData(); }
+  } catch(e) { DB = defaultData(); }
+}
+function saveDB() { localStorage.setItem(STORAGE_KEY, JSON.stringify(DB)); }
+function nextId(arr) { return arr.length ? Math.max(...arr.map(x=>x.id))+1 : 1; }
+
+// ============ TABS ============
+function switchTab(name) {
+  document.querySelectorAll('.tab-content').forEach(el=>el.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(el=>el.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+  const btns = document.querySelectorAll('.tab-btn');
+  const map = {dashboard:0, add:1, products:2, plan:3};
+  btns[map[name]].classList.add('active');
+  if (name==='dashboard') renderDashboard();
+  if (name==='add') renderAddForm();
+  if (name==='products') renderProducts();
+  if (name==='plan') renderPlanning();
+}
+
+// ============ CALENDAR ============
+function changeMonth(delta) {
+  calMonth += delta;
+  if (calMonth < 0) { calMonth = 11; calYear--; }
+  if (calMonth > 11) { calMonth = 0; calYear++; }
+  renderCalendar();
+}
+
+function renderCalendar() {
+  const today = new Date();
+  const monthNames = ['1월','2월','3월','4월','5월','6월','7월','8월','9월','10월','11월','12월'];
+  document.getElementById('calMonthLabel').textContent = `${calYear}년 ${monthNames[calMonth]}`;
+
+  const grid = document.getElementById('calGrid');
+  const dayHdrs = ['일','월','화','수','목','금','토'].map(d=>`<div class="cal-day-hdr">${d}</div>`).join('');
+
+  const firstDay = new Date(calYear, calMonth, 1).getDay();
+  const daysInMonth = new Date(calYear, calMonth+1, 0).getDate();
+  const daysInPrev = new Date(calYear, calMonth, 0).getDate();
+
+  const cells = [];
+  // prev month
+  for (let i = firstDay-1; i >= 0; i--) {
+    cells.push({date: new Date(calYear, calMonth-1, daysInPrev-i), otherMonth: true});
+  }
+  for (let d = 1; d <= daysInMonth; d++) {
+    cells.push({date: new Date(calYear, calMonth, d), otherMonth: false});
+  }
+  const remaining = 42 - cells.length;
+  for (let d = 1; d <= remaining; d++) {
+    cells.push({date: new Date(calYear, calMonth+1, d), otherMonth: true});
+  }
+
+  let html = dayHdrs;
+  cells.forEach(cell => {
+    const d = cell.date;
+    const isToday = d.getFullYear()===today.getFullYear() && d.getMonth()===today.getMonth() && d.getDate()===today.getDate();
+    const dow = d.getDay();
+    let cls = 'cal-cell';
+    if (cell.otherMonth) cls += ' other-month';
+    if (isToday) cls += ' today';
+    if (dow===0) cls += ' sun';
+    if (dow===6) cls += ' sat';
+
+    const promos = getPromosForDate(d);
+    let barsHtml = '';
+    const maxBars = 3;
+    promos.slice(0, maxBars).forEach(p => {
+      const isFirst = isSameDay(d, parseDate(p.startDate));
+      const isLast = isSameDay(d, parseDate(p.endDate));
+      const isRowStart = isFirst || dow === 0;
+      const isRowEnd = isLast || dow === 6;
+      let barCls = 'promo-bar';
+      if (!isRowStart && !isRowEnd) barCls += ' continues-both';
+      else if (!isRowStart && isRowEnd) barCls += ' continues-left';
+      else if (isRowStart && !isRowEnd) barCls += ' continues-right';
+      barsHtml += `<div class="${barCls}" style="background:${p.color};" title="${p.name}" onclick="scrollToCard(${p.id})">▸ ${p.name}</div>`;
+    });
+    if (promos.length > maxBars) barsHtml += `<div class="more-bar">+${promos.length-maxBars}개</div>`;
+
+    html += `<div class="${cls}"><div class="day-num">${d.getDate()}</div>${barsHtml}</div>`;
+  });
+
+  grid.innerHTML = html;
+}
+
+function parseDate(s) { if(!s) return null; const [y,m,d]=s.split('-').map(Number); return new Date(y,m-1,d); }
+function isSameDay(a,b) { return a&&b&&a.getFullYear()===b.getFullYear()&&a.getMonth()===b.getMonth()&&a.getDate()===b.getDate(); }
+function getPromosForDate(d) {
+  return DB.promotions.filter(p => {
+    const s = parseDate(p.startDate), e = parseDate(p.endDate);
+    if (!s || !e) return false;
+    const dn = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    const sn = new Date(s.getFullYear(), s.getMonth(), s.getDate());
+    const en = new Date(e.getFullYear(), e.getMonth(), e.getDate());
+    return dn >= sn && dn <= en;
+  });
+}
+
+function scrollToCard(id) {
+  switchTab('dashboard');
+  setTimeout(() => {
+    const el = document.getElementById('promo-card-'+id);
+    if (el) el.scrollIntoView({behavior:'smooth', block:'center'});
+  }, 100);
+}
+
+// ============ PROMO CARDS ============
+function renderDashboard() {
+  document.getElementById('promoCountLabel').textContent = `총 ${DB.promotions.length}개`;
+  renderCalendar();
+  renderPromoCards();
+}
+
+function renderPromoCards() {
+  const today = new Date();
+  const grid = document.getElementById('promoCards');
+  if (!DB.promotions.length) {
+    grid.innerHTML = `<div class="empty-state"><div class="empty-icon">📭</div><div>등록된 프로모션이 없습니다</div></div>`;
+    return;
+  }
+  const sorted = [...DB.promotions].sort((a,b)=>a.startDate.localeCompare(b.startDate));
+  grid.innerHTML = sorted.map(p => renderPromoCard(p, today)).join('');
+}
+
+function renderPromoCard(p, today) {
+  const start = parseDate(p.startDate), end = parseDate(p.endDate);
+  const tn = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const sn = start ? new Date(start.getFullYear(), start.getMonth(), start.getDate()) : null;
+  const en = end ? new Date(end.getFullYear(), end.getMonth(), end.getDate()) : null;
+
+  let statusChip = '';
+  if (sn && en) {
+    if (tn < sn) statusChip = `<span class="chip chip-blue">D-${Math.round((sn-tn)/86400000)}</span>`;
+    else if (tn > en) statusChip = `<span class="chip chip-gray">종료</span>`;
+    else statusChip = `<span class="chip chip-green">진행중 D+${Math.round((tn-sn)/86400000)+1}</span>`;
+  }
+
+  const tagsHtml = (p.tags||[]).map(t=>`<span class="promo-tag">${t}</span>`).join('');
+  const periodText = `${p.startDate} ${p.startTime||''} ~ ${p.endDate} ${p.endTime||''}`;
+
+  // 공제 항목 계산
+  const allGiftsForCalc = [...(p.gifts||[]).map(g=>({...g,isMember:false})), ...(p.memberGifts||[]).map(g=>({...g,isMember:true}))];
+  const promoProductCount = (p.promoProducts||[]).length || 1;
+
+  // 상품별 증정품 원가 합산 함수
+  function giftDeductFor(productId) {
+    return allGiftsForCalc.reduce((sum, g) => {
+      const gift = DB.gifts.find(x=>x.id===g.giftId);
+      if (!gift) return sum;
+      const cost = gift.cost * (g.qty||1);
+      // productIds 배열 사용 (신규), productId 단일값 (구 데이터 호환)
+      const pids = g.productIds && g.productIds.length > 0 ? g.productIds
+                 : g.productId ? [g.productId] : null;
+      if (pids) {
+        if (pids.includes(productId)) return sum + cost;
+        return sum;
+      }
+      // 미지정 시 전체 상품 균등
+      return sum + Math.round(cost / promoProductCount);
+    }, 0);
+  }
+
+  // Benefits table
+  let benefitRows = '';
+  (p.promoProducts||[]).forEach(pp => {
+    const prod = DB.products.find(x=>x.id===pp.productId);
+    if (!prod) return;
+    const salePrice = pp.salePrice || prod.regularPrice;
+    const discRate = Math.round((1 - salePrice/prod.listPrice)*100);
+    const shipDeduct = pp.freeshipping ? 3000 : 0;
+    const giftDeduct = giftDeductFor(pp.productId);
+    const netProfit = salePrice - prod.cost - shipDeduct - giftDeduct;
+    const isBelowMin = salePrice < prod.minPrice;
+    const netColor = netProfit >= 0 ? 'profit-badge' : 'warn-badge';
+    const netSign = netProfit >= 0 ? '+' : '';
+    const profitBadge = `<span class="${netColor}">${netSign}${netProfit.toLocaleString()}원</span>`;
+    const discBadge = `<span class="discount-badge">${discRate}%↓</span>`;
+    const priceBadge = isBelowMin ? `<span class="warn-badge">⚠ 최저가 미만</span>` : '';
+    const shipBadge = pp.freeshipping ? `<span class="free-ship" style="font-size:10px;padding:1px 5px;">🚚무료</span>` : `<span class="paid-ship" style="font-size:10px;padding:1px 5px;">유료</span>`;
+    // 공제 내역 툴팁
+    const deductDetail = [
+      pp.freeshipping ? '배송비 -3,000' : '',
+      giftDeduct ? `증정품 -${giftDeduct.toLocaleString()}` : ''
+    ].filter(Boolean).join(' / ');
+    benefitRows += `<tr>
+      <td>${prod.name}<br><span class="text-xs text-secondary">${prod.volume}</span></td>
+      <td>${prod.listPrice.toLocaleString()}원</td>
+      <td><strong>${salePrice.toLocaleString()}원</strong> ${shipBadge}${priceBadge}</td>
+      <td>${discBadge}</td>
+      <td>${profitBadge}${deductDetail ? `<br><span style="font-size:10px;color:var(--text-tertiary);">(${deductDetail})</span>` : ''}</td>
+    </tr>`;
+  });
+
+  // 증정품 공제 내역 줄
+  let deductRows = '';
+  allGiftsForCalc.forEach(g => {
+    const gift = DB.gifts.find(x=>x.id===g.giftId);
+    if (!gift) return;
+    const qty = g.qty||1;
+    const total = gift.cost * qty;
+    const typeLabel = g.isMember ? '회원한정' : '전고객';
+    let assignLabel;
+    const pids = g.productIds && g.productIds.length > 0 ? g.productIds
+               : g.productId ? [g.productId] : null;
+    if (pids && pids.length > 0) {
+      const names = pids.map(id => { const pr = DB.products.find(x=>x.id===id); return pr ? pr.name : ''; }).filter(Boolean);
+      assignLabel = `→ ${names.join(', ')} 각각 차감`;
+    } else {
+      assignLabel = `÷ ${promoProductCount}개 균등`;
+    }
+    deductRows += `<tr style="background:#FFF8EC;"><td colspan="4" style="text-align:left;color:var(--warning);font-size:11px;">🎁 ${gift.name} ×${qty} (${typeLabel}) ${total.toLocaleString()}원 ${assignLabel}</td><td><span class="warn-badge">-${total.toLocaleString()}원</span></td></tr>`;
+  });
+
+  const hasDeduct = allGiftsForCalc.length > 0 || (p.promoProducts||[]).some(pp=>pp.freeshipping);
+  const benefitTable = benefitRows ? `
+    <div class="section-label">혜택 정리</div>
+    <table class="benefit-table">
+      <thead><tr><th>상품</th><th>정가</th><th>판매가/배송</th><th>할인율</th><th>순이익</th></tr></thead>
+      <tbody>${benefitRows}${deductRows}</tbody>
+    </table>` : '';
+
+  // Member benefit
+  const memberHtml = p.memberBenefit ? `<div class="member-benefit-box">👑 <span><strong>회원 전용 혜택</strong><br>${p.memberBenefit}</span></div>` : '';
+
+  // Gifts
+  let giftsHtml = '';
+  const allGifts = allGiftsForCalc;
+  allGifts.forEach(g => {
+    const gift = DB.gifts.find(x=>x.id===g.giftId);
+    if (!gift) return;
+    const qty = g.qty||1;
+    const totalCost = gift.cost * qty;
+    const typeBadge = g.isMember ? `<span class="gift-type-badge gift-type-member">회원한정</span>` : `<span class="gift-type-badge gift-type-all">전고객</span>`;
+    giftsHtml += `<div class="gift-row">🎁 ${typeBadge} <strong>${gift.name}</strong> ${gift.volume||''} ×${qty}개 ${g.condition?`<span class="text-xs text-secondary">(${g.condition})</span>`:''} <span class="text-xs text-secondary">원가 ${gift.cost.toLocaleString()}×${qty} = <strong>${totalCost.toLocaleString()}원</strong></span></div>`;
+  });
+
+  // Checklist
+  const cl = p.checklist || [];
+  const done = cl.filter(x=>x.done).length;
+  const pct = cl.length ? Math.round(done/cl.length*100) : 0;
+  const clItemsHtml = cl.map(item => `
+    <div class="checklist-item">
+      <input type="checkbox" ${item.done?'checked':''} onchange="toggleCheck(${p.id},${item.id},this.checked)">
+      <label class="checklist-label ${item.done?'done':''}" onclick="toggleCheck(${p.id},${item.id},!this.previousElementSibling.checked)">${item.text}</label>
+      <button class="del-btn" onclick="deleteCheckItem(${p.id},${item.id})">×</button>
+    </div>`).join('');
+
+  // Schedule info
+  let scheduleInfo = '';
+  if (p.kakaoDate) scheduleInfo += `<span class="chip chip-yellow" style="margin-right:4px;margin-bottom:4px;">📲 카카오 ${p.kakaoDate}</span>`;
+  if (p.datariseDate) scheduleInfo += `<span class="chip chip-blue" style="margin-bottom:4px;">📧 데이터라이즈 ${p.datariseDate}</span>`;
+
+  return `<div class="promo-card" id="promo-card-${p.id}">
+    <div class="promo-card-hdr" style="background:${p.color};">
+      <div class="flex-between" style="align-items:flex-start;">
+        <div>
+          <div class="promo-card-name">${p.name}</div>
+          <div class="promo-card-period">${periodText}</div>
+        </div>
+        <div style="display:flex;flex-direction:column;align-items:flex-end;gap:6px;flex-shrink:0;margin-left:8px;">
+          ${statusChip}
+          <div style="display:flex;gap:4px;margin-top:2px;">
+            <button onclick="editPromo(${p.id})" style="background:rgba(255,255,255,0.22);border:1.5px solid rgba(255,255,255,0.5);color:#fff;padding:4px 10px;border-radius:7px;font-size:11px;cursor:pointer;font-weight:700;">✏️ 편집</button>
+            <button onclick="duplicatePromo(${p.id})" style="background:rgba(255,255,255,0.15);border:1.5px solid rgba(255,255,255,0.35);color:#fff;padding:4px 10px;border-radius:7px;font-size:11px;cursor:pointer;font-weight:700;" title="이 카드를 복제하여 새 프로모션 추가">📋 복제</button>
+            <button onclick="confirmDeletePromo(${p.id})" style="background:rgba(0,0,0,0.15);border:1.5px solid rgba(255,255,255,0.3);color:#fff;padding:4px 8px;border-radius:7px;font-size:11px;cursor:pointer;font-weight:700;">🗑</button>
+          </div>
+        </div>
+      </div>
+      <div class="promo-tags">${tagsHtml}</div>
+    </div>
+    <div class="promo-card-body">
+      ${scheduleInfo ? `<div class="mb-8">${scheduleInfo}</div>` : ''}
+      ${memberHtml}
+      ${benefitTable}
+      ${giftsHtml}
+      <div class="checklist-section">
+        <div class="section-label mb-8">준비사항 <span style="font-weight:400;color:var(--text-secondary);font-size:11px;">${done}/${cl.length}</span></div>
+        <div class="progress-wrap">
+          <div class="progress-bar-bg"><div class="progress-bar-fill" style="width:${pct}%"></div></div>
+          <span class="progress-pct">${pct}%</span>
+        </div>
+        ${clItemsHtml}
+        <div class="checklist-add-row">
+          <input id="cl-input-${p.id}" placeholder="항목 추가 후 Enter" onkeydown="if(event.key==='Enter')addCheckItem(${p.id})">
+          <button class="btn-add-check" onclick="addCheckItem(${p.id})">+</button>
+        </div>
+      </div>
+    </div>
+  </div>`;
+}
+
+function toggleCheck(promoId, itemId, val) {
+  const p = DB.promotions.find(x=>x.id===promoId);
+  if (!p) return;
+  const item = p.checklist.find(x=>x.id===itemId);
+  if (item) item.done = val;
+  saveDB();
+  renderPromoCards();
+}
+function deleteCheckItem(promoId, itemId) {
+  const p = DB.promotions.find(x=>x.id===promoId);
+  if (!p) return;
+  p.checklist = p.checklist.filter(x=>x.id!==itemId);
+  saveDB(); renderPromoCards();
+}
+function addCheckItem(promoId) {
+  const inp = document.getElementById('cl-input-'+promoId);
+  const text = inp.value.trim();
+  if (!text) return;
+  const p = DB.promotions.find(x=>x.id===promoId);
+  if (!p) return;
+  const maxId = p.checklist.length ? Math.max(...p.checklist.map(x=>x.id))+1 : 1;
+  p.checklist.push({id:maxId, text, done:false});
+  saveDB(); renderPromoCards();
+}
+
+// ============ ADD/EDIT FORM ============
+function renderAddForm() {
+  // Color options
+  const colorDiv = document.getElementById('colorOpts');
+  colorDiv.innerHTML = PRESET_COLORS.map(c=>`<div class="color-opt ${c===selectedColor?'sel':''}" style="background:${c}" onclick="selectColor('${c}')"></div>`).join('')
+    + `<div style="position:relative;width:28px;height:28px;"><input type="color" id="customColorInput" value="${selectedColor}" onchange="selectColor(this.value)" style="width:36px;height:36px;border:none;background:none;cursor:pointer;position:absolute;top:-4px;left:-4px;border-radius:50%;opacity:0.01;z-index:2;"><div class="color-opt" style="background:${selectedColor};border:2px dashed #ccc;background-image:conic-gradient(red,yellow,lime,cyan,blue,magenta,red);${PRESET_COLORS.includes(selectedColor)?'':'border-color:var(--text-primary)'}"></div></div>`;
+
+  // Tag selector
+  const tagDiv = document.getElementById('tagSelector');
+  tagDiv.innerHTML = TAGS_OPTIONS.map(t=>`<span class="tag-opt ${selectedTags.includes(t)?'sel':''}" onclick="toggleTag('${t}')">${t}</span>`).join('');
+
+  // Product pick list
+  const ppList = document.getElementById('productPickList');
+  ppList.innerHTML = DB.products.map(prod => {
+    const pp = tempPromoProducts ? tempPromoProducts.find(x=>x.productId===prod.id) : null;
+    const checked = !!pp;
+    const saleVal = pp ? pp.salePrice : prod.regularPrice;
+    const freeShip = pp ? !!pp.freeshipping : false;
+    const profitVal = (pp ? saleVal : prod.regularPrice) - prod.cost - (freeShip ? 3000 : 0);
+    const discVal = Math.round((1 - (pp ? saleVal : prod.regularPrice) / prod.listPrice) * 100);
+    return `<div class="product-pick-item">
+      <input type="checkbox" id="pp-${prod.id}" ${checked?'checked':''} onchange="toggleProductPick(${prod.id})" style="width:16px;height:16px;accent-color:var(--primary);cursor:pointer;flex-shrink:0;">
+      <div class="product-pick-info">
+        <div class="product-pick-name">${prod.name} <span class="text-xs text-secondary">${prod.volume}</span></div>
+        <div class="product-pick-price">정가 ${prod.listPrice.toLocaleString()} | 상시 ${prod.regularPrice.toLocaleString()} | 최저 ${prod.minPrice.toLocaleString()} | 원가 ${prod.cost.toLocaleString()}</div>
+      </div>
+      <div class="product-pick-inputs" id="pp-inputs-${prod.id}" style="${checked?'':'display:none'}">
+        <input class="price-input" id="pp-price-${prod.id}" type="number" value="${saleVal}" min="0" onchange="updatePriceCalc(${prod.id})" oninput="updatePriceCalc(${prod.id})">원
+        <label style="display:flex;align-items:center;gap:3px;font-size:11px;cursor:pointer;flex-shrink:0;white-space:nowrap;">
+          <input type="checkbox" id="pp-ship-${prod.id}" ${freeShip?'checked':''} onchange="updateShipCalc(${prod.id})" style="accent-color:var(--success);width:13px;height:13px;">
+          <span style="color:var(--success);font-weight:700;">🚚무료</span>
+        </label>
+        <span class="auto-calc" id="pp-calc-${prod.id}"><span class="discount-badge">${discVal}%↓</span> 순이익 <span class="profit-badge">+${profitVal.toLocaleString()}</span></span>
+      </div>
+    </div>`;
+  }).join('');
+
+  // Gift area
+  renderGiftPickArea();
+
+  // Checklist picker
+  const clPicker = document.getElementById('checklistPicker');
+  clPicker.innerHTML = DEFAULT_CHECKLIST.map(item=>`<label style="display:flex;align-items:center;gap:7px;font-size:13px;cursor:pointer;">
+    <input type="checkbox" ${selectedChecklistItems.includes(item)?'checked':''} onchange="toggleChecklistItem('${item}',this.checked)" style="accent-color:var(--primary);width:15px;height:15px;">
+    ${item}
+  </label>`).join('');
+
+  document.getElementById('formTitle').textContent = editingPromoId !== null ? '프로모션 편집' : '프로모션 추가';
+}
+
+let tempPromoProducts = [];
+let tempGiftRowsData = [];
+
+function toggleProductPick(prodId) {
+  const cb = document.getElementById('pp-'+prodId);
+  const inp = document.getElementById('pp-inputs-'+prodId);
+  if (cb.checked) {
+    inp.style.display = 'flex';
+    const prod = DB.products.find(x=>x.id===prodId);
+    if (!tempPromoProducts.find(x=>x.productId===prodId)) {
+      tempPromoProducts.push({productId:prodId, salePrice: prod.regularPrice, freeshipping: false});
+    }
+  } else {
+    inp.style.display = 'none';
+    tempPromoProducts = tempPromoProducts.filter(x=>x.productId!==prodId);
+  }
+}
+function updatePriceCalc(prodId) {
+  const prod = DB.products.find(x=>x.id===prodId);
+  const inp = document.getElementById('pp-price-'+prodId);
+  const shipCb = document.getElementById('pp-ship-'+prodId);
+  const salePrice = parseInt(inp.value)||0;
+  const freeShip = shipCb ? shipCb.checked : false;
+  const discRate = Math.round((1-salePrice/prod.listPrice)*100);
+  const profit = salePrice - prod.cost - (freeShip ? 3000 : 0);
+  const warn = salePrice < prod.minPrice ? `<span class="warn-badge">⚠최저가↓</span>` : '';
+  const shipTag = freeShip ? ` <span style="color:var(--success);font-size:10px;">🚚-3,000</span>` : '';
+  document.getElementById('pp-calc-'+prodId).innerHTML = `<span class="discount-badge">${discRate}%↓</span> 순이익 <span class="profit-badge">+${profit.toLocaleString()}</span>${shipTag}${warn}`;
+  const pp = tempPromoProducts.find(x=>x.productId===prodId);
+  if (pp) pp.salePrice = salePrice;
+}
+function updateShipCalc(prodId) {
+  const shipCb = document.getElementById('pp-ship-'+prodId);
+  const pp = tempPromoProducts.find(x=>x.productId===prodId);
+  if (pp) pp.freeshipping = shipCb.checked;
+  updatePriceCalc(prodId);
+}
+function selectColor(c) { selectedColor = c; renderAddForm(); }
+function toggleTag(t) {
+  if (selectedTags.includes(t)) selectedTags = selectedTags.filter(x=>x!==t);
+  else selectedTags.push(t);
+  document.querySelectorAll('.tag-opt').forEach(el => {
+    el.classList.toggle('sel', selectedTags.includes(el.textContent));
+  });
+}
+function toggleChecklistItem(item, val) {
+  if (val) { if (!selectedChecklistItems.includes(item)) selectedChecklistItems.push(item); }
+  else { selectedChecklistItems = selectedChecklistItems.filter(x=>x!==item); }
+}
+
+function renderGiftPickArea() {
+  const area = document.getElementById('giftPickArea');
+  const selectedProds = tempPromoProducts.map(pp => DB.products.find(x=>x.id===pp.productId)).filter(Boolean);
+  area.innerHTML = tempGiftRowsData.map((g,i) => {
+    const gift = DB.gifts.find(x=>x.id==g.giftId);
+    const qty = g.qty||1;
+    const totalCost = gift ? gift.cost * qty : 0;
+    const pids = g.productIds || [];
+    const allSelected = selectedProds.length > 0 && pids.length === 0;
+    const prodChecks = selectedProds.length > 0
+      ? `<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;">
+          <label style="display:flex;align-items:center;gap:3px;font-size:12px;cursor:pointer;color:var(--text-secondary);">
+            <input type="checkbox" ${allSelected?'checked':''} onchange="toggleGiftAllProds(${i},this.checked)" style="accent-color:var(--primary);width:13px;height:13px;">전체
+          </label>
+          ${selectedProds.map(prod=>`
+          <label style="display:flex;align-items:center;gap:3px;font-size:12px;cursor:pointer;">
+            <input type="checkbox" ${pids.includes(prod.id)?'checked':''} onchange="toggleGiftProd(${i},${prod.id},this.checked)" style="accent-color:var(--primary);width:13px;height:13px;">
+            ${prod.name}
+          </label>`).join('')}
+        </div>`
+      : `<span style="font-size:11px;color:var(--text-tertiary);">↑ 행사 상품을 먼저 선택하세요</span>`;
+    return `
+    <div style="display:flex;align-items:flex-start;gap:6px;margin-bottom:8px;background:var(--bg);border-radius:8px;padding:8px 10px;flex-wrap:wrap;">
+      <span class="chip ${g.isMember?'chip-blue':'chip-yellow'}" style="flex-shrink:0;margin-top:3px;">${g.isMember?'회원한정':'전고객'}</span>
+      <div style="display:flex;flex-direction:column;gap:6px;flex:1;min-width:200px;">
+        <select class="form-input" style="padding:5px 8px;" onchange="updateGiftRow(${i},'giftId',this.value)">
+          <option value="">증정품 선택</option>
+          ${DB.gifts.map(gf=>`<option value="${gf.id}" ${g.giftId==gf.id?'selected':''}>${gf.name} (원가 ${gf.cost.toLocaleString()}원)</option>`).join('')}
+        </select>
+        <div style="background:var(--card);border-radius:7px;padding:6px 8px;border:1px solid var(--border);">
+          <div style="font-size:11px;font-weight:700;color:var(--text-secondary);margin-bottom:5px;">적용 상품 (원가 배분 기준)</div>
+          ${prodChecks}
+        </div>
+        <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;">
+          <div style="display:flex;align-items:center;gap:4px;flex-shrink:0;">
+            <label style="font-size:12px;color:var(--text-secondary);">수량</label>
+            <input type="number" min="1" value="${qty}" style="width:52px;padding:5px 7px;border:1.5px solid var(--border);border-radius:7px;font-size:13px;text-align:center;font-family:inherit;" onchange="updateGiftRow(${i},'qty',this.value)" oninput="updateGiftRow(${i},'qty',this.value)">
+            ${totalCost ? `<span style="font-size:11px;color:var(--warning);font-weight:600;white-space:nowrap;">= ${totalCost.toLocaleString()}원</span>` : ''}
+          </div>
+          <input class="form-input" style="flex:2;min-width:120px;padding:5px 8px;" placeholder="조건 (예: 2만원 이상)" value="${g.condition||''}" onchange="updateGiftRow(${i},'condition',this.value)">
+        </div>
+      </div>
+      <button class="btn btn-danger btn-xs" onclick="removeGiftRow(${i})" style="flex-shrink:0;margin-top:3px;">✕</button>
+    </div>`;
+  }).join('');
+}
+function toggleGiftProd(i, prodId, checked) {
+  if (!tempGiftRowsData[i].productIds) tempGiftRowsData[i].productIds = [];
+  if (checked) { if (!tempGiftRowsData[i].productIds.includes(prodId)) tempGiftRowsData[i].productIds.push(prodId); }
+  else { tempGiftRowsData[i].productIds = tempGiftRowsData[i].productIds.filter(x=>x!==prodId); }
+  renderGiftPickArea();
+}
+function toggleGiftAllProds(i, checked) {
+  tempGiftRowsData[i].productIds = checked ? [] : tempPromoProducts.map(pp=>pp.productId);
+  renderGiftPickArea();
+}
+function addGiftRow(isMember) {
+  tempGiftRowsData.push({giftId:'', isMember, condition:'', qty:1, productIds:[]});
+  renderGiftPickArea();
+}
+function updateGiftRow(i,key,val) {
+  if (key==='giftId') tempGiftRowsData[i][key] = parseInt(val)||'';
+  else if (key==='qty') tempGiftRowsData[i][key] = Math.max(1, parseInt(val)||1);
+  else tempGiftRowsData[i][key] = val;
+  if (key==='giftId'||key==='qty') renderGiftPickArea();
+}
+function removeGiftRow(i) { tempGiftRowsData.splice(i,1); renderGiftPickArea(); }
+
+function savePromotion() {
+  const name = document.getElementById('f_name').value.trim();
+  const startDate = document.getElementById('f_startDate').value;
+  const endDate = document.getElementById('f_endDate').value;
+  if (!name||!startDate||!endDate) { alert('프로모션명, 시작일, 종료일은 필수입니다.'); return; }
+
+  const promoData = {
+    name,
+    startDate,
+    endDate,
+    startTime: document.getElementById('f_startTime').value,
+    endTime: document.getElementById('f_endTime').value,
+    color: selectedColor,
+    tags: [...selectedTags],
+    kakaoDate: document.getElementById('f_kakaoDate').value,
+    datariseDate: document.getElementById('f_datariseDate').value,
+    memberBenefit: document.getElementById('f_memberBenefit').value,
+    promoProducts: tempPromoProducts.map(pp => {
+      const el = document.getElementById('pp-price-'+pp.productId);
+      const shipEl = document.getElementById('pp-ship-'+pp.productId);
+      return {...pp, salePrice: el ? parseInt(el.value)||pp.salePrice : pp.salePrice, freeshipping: shipEl ? shipEl.checked : pp.freeshipping||false};
+    }),
+    gifts: tempGiftRowsData.filter(g=>!g.isMember&&g.giftId),
+    memberGifts: tempGiftRowsData.filter(g=>g.isMember&&g.giftId),
+    checklist: selectedChecklistItems.map((text,i)=>({id:i+1,text,done:false})),
+    insight: ''
+  };
+
+  if (editingPromoId !== null) {
+    const idx = DB.promotions.findIndex(x=>x.id===editingPromoId);
+    if (idx>=0) {
+      const existing = DB.promotions[idx];
+      promoData.checklist = existing.checklist;
+      promoData.insight = existing.insight||'';
+      DB.promotions[idx] = {...existing, ...promoData};
+    }
+  } else {
+    promoData.id = nextId(DB.promotions);
+    DB.promotions.push(promoData);
+  }
+  saveDB();
+  resetForm();
+  switchTab('dashboard');
+}
+
+function resetForm() {
+  editingPromoId = null;
+  selectedTags = [];
+  selectedColor = PRESET_COLORS[0];
+  selectedChecklistItems = [...DEFAULT_CHECKLIST];
+  tempPromoProducts = [];
+  tempGiftRowsData = [];
+  document.getElementById('f_name').value='';
+  document.getElementById('f_startDate').value='';
+  document.getElementById('f_endDate').value='';
+  document.getElementById('f_startTime').value='00:00';
+  document.getElementById('f_endTime').value='23:59';
+  document.getElementById('f_kakaoDate').value='';
+  document.getElementById('f_datariseDate').value='';
+  document.getElementById('f_memberBenefit').value='';
+  renderAddForm();
+}
+
+function duplicatePromo(id) {
+  const p = DB.promotions.find(x=>x.id===id);
+  if (!p) return;
+  const copy = JSON.parse(JSON.stringify(p));
+  copy.id = nextId(DB.promotions);
+  copy.name = p.name + ' (복사본)';
+  copy.checklist = (p.checklist||[]).map(item => ({...item, done: false}));
+  copy.insight = '';
+  DB.promotions.push(copy);
+  saveDB();
+  renderDashboard();
+  setTimeout(() => {
+    const el = document.getElementById('promo-card-' + copy.id);
+    if (el) el.scrollIntoView({behavior:'smooth', block:'center'});
+  }, 100);
+}
+
+function populateEditForm(p) {
+  document.getElementById('f_name').value = p.name;
+  document.getElementById('f_startDate').value = p.startDate;
+  document.getElementById('f_startDate').dataset.prev = p.startDate;
+  document.getElementById('f_endDate').value = p.endDate;
+  document.getElementById('f_startTime').value = p.startTime||'00:00';
+  document.getElementById('f_endTime').value = p.endTime||'23:59';
+  document.getElementById('f_kakaoDate').value = p.kakaoDate||'';
+  document.getElementById('f_datariseDate').value = p.datariseDate||'';
+  document.getElementById('f_memberBenefit').value = p.memberBenefit||'';
+}
+
+function onStartDateChange(el) {
+  const newVal = el.value;
+  const oldVal = el.dataset.prev;
+  el.dataset.prev = newVal;
+  if (!oldVal || !newVal || oldVal === newVal) return;
+  const delta = Math.round((new Date(newVal) - new Date(oldVal)) / 86400000);
+  if (delta === 0) return;
+  ['f_endDate','f_kakaoDate','f_datariseDate'].forEach(id => {
+    const other = document.getElementById(id);
+    if (other && other.value) {
+      const d = new Date(other.value);
+      d.setDate(d.getDate() + delta);
+      other.value = d.toISOString().split('T')[0];
+    }
+  });
+}
+
+function editPromo(id) {
+  const p = DB.promotions.find(x=>x.id===id);
+  if (!p) return;
+  editingPromoId = id;
+  selectedTags = [...(p.tags||[])];
+  selectedColor = p.color||PRESET_COLORS[0];
+  selectedChecklistItems = (p.checklist||[]).map(x=>x.text);
+  tempPromoProducts = [...(p.promoProducts||[])];
+  tempGiftRowsData = [...(p.gifts||[]).map(g=>({...g,isMember:false})), ...(p.memberGifts||[]).map(g=>({...g,isMember:true}))];
+  switchTab('add');
+  populateEditForm(p);
+}
+
+function confirmDeletePromo(id) {
+  const p = DB.promotions.find(x=>x.id===id);
+  document.getElementById('deleteMsg').textContent = `"${p.name}" 프로모션을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.`;
+  document.getElementById('deleteConfirmBtn').onclick = () => { deletePromo(id); closeModal('deleteModal'); };
+  document.getElementById('deleteModal').classList.add('open');
+}
+function deletePromo(id) {
+  DB.promotions = DB.promotions.filter(x=>x.id!==id);
+  saveDB(); renderDashboard();
+}
+
+// ============ PRODUCTS TAB ============
+function renderProducts() {
+  renderMainTable(); renderGiftTable();
+}
+
+function renderMainTable() {
+  const tbl = document.getElementById('mainProductTable');
+  tbl.innerHTML = `<thead><tr>
+    <th>썸네일</th><th>상품명</th><th>카테고리</th><th>용량</th>
+    <th>정가</th><th>상시판매가</th><th>최저판매가</th><th>원가</th><th>마진율</th><th>관리</th>
+  </tr></thead><tbody>${DB.products.map(p => {
+    const margin = Math.round((1 - p.cost/p.regularPrice)*100);
+    const mClass = margin>=70?'margin-hi':margin>=50?'margin-mid':'margin-lo';
+    const thumbHtml = p.thumbnail ? `<img src="${p.thumbnail}" alt="">` : '🧴';
+    return `<tr>
+      <td><div class="thumb-box" onclick="clickThumb(${p.id},'main')" title="클릭하여 이미지 변경">${thumbHtml}</div></td>
+      <td style="text-align:left;font-weight:600;">${p.name}</td>
+      <td>${p.category||''}</td>
+      <td>${p.volume||''}</td>
+      <td>${p.listPrice.toLocaleString()}</td>
+      <td>${p.regularPrice.toLocaleString()}</td>
+      <td>${p.minPrice.toLocaleString()}</td>
+      <td>${p.cost.toLocaleString()}</td>
+      <td class="${mClass}">${margin}%</td>
+      <td>
+        <button class="btn btn-secondary btn-xs" onclick="openProductModal(${p.id},'main')" style="margin-right:4px;">편집</button>
+        <button class="btn btn-danger btn-xs" onclick="confirmDeleteProduct(${p.id},'main')">삭제</button>
+      </td>
+    </tr>`;
+  }).join('')}</tbody>`;
+}
+
+function renderGiftTable() {
+  const tbl = document.getElementById('giftProductTable');
+  tbl.innerHTML = `<thead><tr><th>증정품명</th><th>용량</th><th>원가</th><th>관리</th></tr></thead>
+  <tbody>${DB.gifts.map(g=>`<tr>
+    <td style="text-align:left;font-weight:600;">${g.name}</td>
+    <td>${g.volume||''}</td>
+    <td>${g.cost.toLocaleString()}원</td>
+    <td>
+      <button class="btn btn-secondary btn-xs" onclick="openProductModal(${g.id},'gift')" style="margin-right:4px;">편집</button>
+      <button class="btn btn-danger btn-xs" onclick="confirmDeleteProduct(${g.id},'gift')">삭제</button>
+    </td>
+  </tr>`).join('')}</tbody>`;
+}
+
+function clickThumb(id, type) { currentThumbProductId = {id,type}; document.getElementById('thumbUpload').click(); }
+function handleThumbUpload(e) {
+  const file = e.target.files[0]; if(!file||!currentThumbProductId) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    const {id,type} = currentThumbProductId;
+    if (type==='main') { const p=DB.products.find(x=>x.id===id); if(p) p.thumbnail=ev.target.result; }
+    saveDB(); renderProducts(); e.target.value='';
+  };
+  reader.readAsDataURL(file);
+}
+
+function openProductModal(id, type) {
+  editingProductId = id; editingProductType = type;
+  document.getElementById('productModalTitle').textContent = id ? '상품 편집' : (type==='main'?'본품 추가':'증정품 추가');
+  const body = document.getElementById('productModalBody');
+  if (type==='main') {
+    const p = id ? DB.products.find(x=>x.id===id) : null;
+    body.innerHTML = `
+      <div class="form-row"><div class="form-group"><label class="form-label">상품명</label><input class="form-input" id="pm_name" value="${p?p.name:''}"></div>
+      <div class="form-group"><label class="form-label">카테고리</label><input class="form-input" id="pm_cat" value="${p?p.category||'':''}" placeholder="샴푸/트리트먼트/미니..."></div></div>
+      <div class="form-row"><div class="form-group"><label class="form-label">용량</label><input class="form-input" id="pm_vol" value="${p?p.volume||'':''}"></div>
+      <div class="form-group"><label class="form-label">정가</label><input class="form-input" type="number" id="pm_list" value="${p?p.listPrice:''}"></div></div>
+      <div class="form-row"><div class="form-group"><label class="form-label">상시판매가</label><input class="form-input" type="number" id="pm_reg" value="${p?p.regularPrice:''}"></div>
+      <div class="form-group"><label class="form-label">최저판매가</label><input class="form-input" type="number" id="pm_min" value="${p?p.minPrice:''}"></div></div>
+      <div class="form-group"><label class="form-label">원가</label><input class="form-input" type="number" id="pm_cost" value="${p?p.cost:''}"></div>`;
+  } else {
+    const g = id ? DB.gifts.find(x=>x.id===id) : null;
+    body.innerHTML = `
+      <div class="form-group"><label class="form-label">증정품명</label><input class="form-input" id="pm_name" value="${g?g.name:''}"></div>
+      <div class="form-row"><div class="form-group"><label class="form-label">용량</label><input class="form-input" id="pm_vol" value="${g?g.volume||'':''}"></div>
+      <div class="form-group"><label class="form-label">원가</label><input class="form-input" type="number" id="pm_cost" value="${g?g.cost:''}"></div></div>`;
+  }
+  document.getElementById('productModal').classList.add('open');
+}
+function closeProductModal() { document.getElementById('productModal').classList.remove('open'); }
+function saveProduct() {
+  const type = editingProductType;
+  if (type==='main') {
+    const data = {
+      name: document.getElementById('pm_name').value.trim(),
+      category: document.getElementById('pm_cat').value.trim(),
+      volume: document.getElementById('pm_vol').value.trim(),
+      listPrice: parseInt(document.getElementById('pm_list').value)||0,
+      regularPrice: parseInt(document.getElementById('pm_reg').value)||0,
+      minPrice: parseInt(document.getElementById('pm_min').value)||0,
+      cost: parseInt(document.getElementById('pm_cost').value)||0,
+    };
+    if (!data.name) { alert('상품명을 입력하세요'); return; }
+    if (editingProductId) {
+      const p = DB.products.find(x=>x.id===editingProductId);
+      if (p) Object.assign(p, data);
+    } else {
+      DB.products.push({id:nextId(DB.products), type:'main', thumbnail:null, ...data});
+    }
+  } else {
+    const data = {
+      name: document.getElementById('pm_name').value.trim(),
+      volume: document.getElementById('pm_vol').value.trim(),
+      cost: parseInt(document.getElementById('pm_cost').value)||0,
+    };
+    if (!data.name) { alert('증정품명을 입력하세요'); return; }
+    if (editingProductId) {
+      const g = DB.gifts.find(x=>x.id===editingProductId);
+      if (g) Object.assign(g, data);
+    } else {
+      DB.gifts.push({id:nextId(DB.gifts), ...data});
+    }
+  }
+  saveDB(); renderProducts(); closeProductModal();
+}
+function confirmDeleteProduct(id, type) {
+  const name = type==='main' ? DB.products.find(x=>x.id===id)?.name : DB.gifts.find(x=>x.id===id)?.name;
+  document.getElementById('deleteMsg').textContent = `"${name}"을(를) 삭제하시겠습니까?`;
+  document.getElementById('deleteConfirmBtn').onclick = () => {
+    if (type==='main') DB.products = DB.products.filter(x=>x.id!==id);
+    else DB.gifts = DB.gifts.filter(x=>x.id!==id);
+    saveDB(); renderProducts(); closeModal('deleteModal');
+  };
+  document.getElementById('deleteModal').classList.add('open');
+}
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+
+// ============ PLANNING TAB ============
+function renderPlanning() {
+  renderTimeline();
+  renderInsights();
+  renderSuggestions();
+}
+
+function renderTimeline() {
+  const wrap = document.getElementById('planTimeline');
+  if (!DB.promotions.length) { wrap.innerHTML = '<p class="text-secondary text-sm">등록된 프로모션이 없습니다.</p>'; return; }
+  const allDates = DB.promotions.flatMap(p=>[p.startDate,p.endDate]).filter(Boolean).sort();
+  if (!allDates.length) return;
+  const minDate = parseDate(allDates[0]);
+  const maxDate = parseDate(allDates[allDates.length-1]);
+  const totalDays = Math.max(1, Math.round((maxDate-minDate)/86400000))+1;
+  const today = new Date();
+  const todayPct = Math.min(100, Math.max(0, Math.round((today-minDate)/86400000/totalDays*100)));
+  let html = `<div style="position:relative;font-size:11px;color:var(--text-secondary);margin-bottom:4px;padding-left:128px;">${minDate.toLocaleDateString('ko',{month:'short',day:'numeric'})} ~ ${maxDate.toLocaleDateString('ko',{month:'short',day:'numeric'})}</div>`;
+  html += `<div style="position:relative;margin-bottom:8px;">
+    <div style="height:2px;background:var(--border);margin-left:128px;border-radius:1px;"></div>
+    <div style="position:absolute;left:calc(128px + ${todayPct}%);top:-4px;width:2px;height:10px;background:var(--danger);"></div>
+  </div>`;
+  DB.promotions.forEach(p => {
+    const s = parseDate(p.startDate), e = parseDate(p.endDate);
+    if (!s||!e) return;
+    const left = Math.max(0,Math.round((s-minDate)/86400000/totalDays*100));
+    const width = Math.max(1,Math.round((e-s)/86400000/totalDays*100+1/totalDays*100));
+    html += `<div class="timeline-row">
+      <span class="timeline-name" title="${p.name}">${p.name}</span>
+      <div class="timeline-bar-wrap">
+        <div class="timeline-bar" style="left:${left}%;width:${Math.min(width,100-left)}%;background:${p.color};">${p.name}</div>
+      </div>
+    </div>`;
+  });
+  wrap.innerHTML = html;
+}
+
+function renderInsights() {
+  const grid = document.getElementById('insightsGrid');
+  if (!DB.promotions.length) { grid.innerHTML = '<p class="text-secondary text-sm">등록된 프로모션이 없습니다.</p>'; return; }
+  grid.innerHTML = DB.promotions.map(p => `
+    <div class="insight-card">
+      <div class="insight-card-name"><div class="insight-dot" style="background:${p.color}"></div>${p.name} <span class="text-xs text-secondary">${p.startDate}</span></div>
+      <textarea class="insight-textarea" id="insight-${p.id}" placeholder="이 프로모션의 성과, 반응, 개선점 등을 기록하세요...">${p.insight||''}</textarea>
+      <button class="insight-save-btn" onclick="saveInsight(${p.id})">저장</button>
+    </div>`).join('');
+}
+
+function saveInsight(id) {
+  const p = DB.promotions.find(x=>x.id===id);
+  if (p) { p.insight = document.getElementById('insight-'+id).value; saveDB(); }
+}
+
+function renderSuggestions() {
+  const grid = document.getElementById('suggestionsGrid');
+  const today = new Date();
+  const currentPromos = DB.promotions;
+  const usedTags = currentPromos.flatMap(p=>p.tags||[]);
+  const recentlyDiscounted = currentPromos.filter(p=>(p.tags||[]).includes('#할인')).flatMap(p=>p.promoProducts||[]).map(pp=>pp.productId);
+  const recentlyGifted = currentPromos.filter(p=>(p.tags||[]).includes('#증정')).length;
+
+  const suggestions = [
+    {
+      name: '레드락신 브랜드데이',
+      period: '2026-04-14 ~ 2026-04-16',
+      tags: ['#1일특가','#할인'],
+      desc: '최근 프로모션에서 제외된 레드락신 샴푸 라인 집중 조명. 브랜드데이 형식의 단기 고강도 특가로 구매 전환 유도. 1일특가이므로 최저판매가 미만 허용.',
+      products: '레드락신 샴푸 350ml 특가 운영',
+      reason: '레드락신이 최근 프로모션에서 제외됨 + 단기 스팟으로 이전 할인 피로도 없음'
+    },
+    {
+      name: '어버이날 패키지 기획전',
+      period: '2026-04-28 ~ 2026-05-12',
+      tags: ['#패키지','#증정'],
+      desc: '어버이날(5/8) 시즌을 겨냥한 선물용 패키지 구성. 할인보다는 증정품 위주로 구성하여 가격 이미지 유지. 봄 기획전 종료 후 2주 이상 간격으로 배치.',
+      products: '전 라인 + 미니샴푸 2종&키링파우치 증정',
+      reason: '봄 기획전(~4/10) 종료 후 적절한 간격 / 증정 위주로 이전 할인과 차별화'
+    },
+    {
+      name: '신규 회원 전용 6월 스타트팩',
+      period: '2026-06-01 ~ 2026-06-14',
+      tags: ['#회원혜택','#신제품'],
+      desc: '여름 시즌 진입 전 신규 회원 유입 캠페인. 회원가입 시 웰컴 혜택 강화 + 첫 구매 회원 한정 증정품. 기존 전고객 할인 없이 회원 전환에 집중.',
+      products: '전 라인 상시가 유지 + 회원한정 증정',
+      reason: '3월 웰컴팩 종료 후 새로운 회원 트랙 필요 / 6월 여름 시즌 전 데이터 확보'
+    },
+    {
+      name: '여름 샴푸 기획전',
+      period: '2026-06-22 ~ 2026-07-05',
+      tags: ['#할인','#무료배송'],
+      desc: '여름 두피 케어 시즌 기획. 샴푸 라인 전체 할인가 운영(최저판매가 이상). 트리트먼트 대신 샴푸 위주 구성으로 이전 기획전과 차별화.',
+      products: '더마바이옴·라멜럭스·레드락신 샴푸 라인 / 상시가 대비 5~10% 할인',
+      reason: '봄 기획전 이후 60일 이상 간격 / 리제녹실 트리트먼트 제외로 다음 기회 보존'
+    }
+  ];
+
+  grid.innerHTML = suggestions.map((s,i) => `
+    <div class="suggestion-card">
+      <div class="suggestion-header">
+        <span class="suggestion-name">${s.name}</span>
+      </div>
+      <div class="suggestion-period">📅 ${s.period}</div>
+      <div class="suggestion-tags" style="margin-top:6px;">${s.tags.map(t=>`<span class="suggestion-tag">${t}</span>`).join('')}</div>
+      <div class="suggestion-desc" style="margin-top:8px;">${s.desc}</div>
+      <div class="suggestion-products"><strong>추천 구성:</strong> ${s.products}</div>
+      <div style="font-size:11px;color:var(--text-secondary);margin-bottom:8px;padding:6px 8px;background:var(--bg);border-radius:6px;">💡 ${s.reason}</div>
+      <div class="suggestion-actions">
+        <button class="btn btn-primary btn-sm" onclick="applysuggestion(${i})">이걸로 기획하기</button>
+      </div>
+    </div>`).join('');
+
+  window._suggestions = suggestions;
+}
+
+function applysuggestion(i) {
+  const s = window._suggestions[i];
+  const [start, end] = s.period.split(' ~ ');
+  editingPromoId = null;
+  selectedTags = s.tags;
+  selectedColor = PRESET_COLORS[Math.floor(Math.random()*PRESET_COLORS.length)];
+  selectedChecklistItems = [...DEFAULT_CHECKLIST];
+  tempPromoProducts = [];
+  tempGiftRowsData = [];
+  switchTab('add');
+  setTimeout(() => {
+    document.getElementById('f_name').value = s.name;
+    document.getElementById('f_startDate').value = start;
+    document.getElementById('f_endDate').value = end;
+    renderAddForm();
+  }, 100);
+}
+
+// ============ INIT ============
+document.addEventListener('DOMContentLoaded', () => {
+  loadDB();
+  const today = new Date();
+  calYear = today.getFullYear();
+  calMonth = today.getMonth();
+  document.getElementById('todayLabel').textContent = today.toLocaleDateString('ko',{year:'numeric',month:'long',day:'numeric',weekday:'short'});
+  tempPromoProducts = [];
+  tempGiftRowsData = [];
+  renderDashboard();
+  renderAddForm();
+});
+
+// Click outside modal to close
+document.querySelectorAll('.modal-overlay').forEach(el => {
+  el.addEventListener('click', e => { if(e.target===el) el.classList.remove('open'); });
+});
+</script>
+</body>
+</html>
